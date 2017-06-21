@@ -5,9 +5,9 @@
 
 (require 2htdp/universe
          lang/posn
-         "computer-player.rkt"
-         "turn-based-game.rkt"
-         "turn-based-game-gui.rkt")
+         "../computer-player.rkt"
+         "../turn-based-game.rkt"
+         "../turn-based-game-gui.rkt")
 
 ;; ------------------------------------------------------------------------
 

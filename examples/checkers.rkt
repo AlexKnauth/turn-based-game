@@ -211,31 +211,32 @@
 
 ;; piece-valid-move-choices : Board Side Pos Piece -> [Sequenceof MoveChoice]
 (define (piece-valid-move-choices board side pos piece)
-  (define (empty-pos? p)
-    (false? (board-space board p)))
-  (cond
-    [(pawn? piece)
-     (append
-      (for/list ([to (in-list (diagonal-forward-1-poss side pos))]
-                 #:when (empty-pos? to))
-        (move pos to))
-      ;; TODO: how to enumerate multiple-jump moves?
-      (for/list ([to (in-list (diagonal-forward-2-poss side pos))]
-                 #:when (and (empty-pos? to)
-                             (jumpable-pos? board side
-                                            (pos-in-between pos to))))
-        (jump pos (list to))))]
-    [(king? piece)
-     (append
-      (for/list ([to (in-list (diagonal-1-poss pos))]
-                 #:when (empty-pos? to))
-        (move pos to))
-      ;; TODO: how to enumerate multiple-jump moves?
-      (for/list ([to (in-list (diagonal-2-poss pos))]
-                 #:when (and (empty-pos? to)
-                             (jumpable-pos? board side
-                                            (pos-in-between pos to))))
-        (jump pos (list to))))]))
+  (append
+   (for/list ([to (in-list (cond
+                             [(pawn? piece) (diagonal-forward-1-poss side pos)]
+                             [(king? piece) (diagonal-1-poss pos)]))]
+              #:when (false? (board-space board to)))
+     (move pos to))
+   (piece-valid-jumps board side pos pos piece '())))
+
+;; piece-valid-jumps :
+;; Board Side Pos Pos Piece [Listof Pos] -> [Sequenceof MoveChoice]
+(define (piece-valid-jumps board side from pos piece acc)
+  (define nexts
+    (for/list
+        ([next (in-list (cond
+                          [(pawn? piece) (diagonal-forward-2-poss side pos)]
+                          [(king? piece) (diagonal-2-poss pos)]))]
+         #:when (and (not (member next acc))
+                     (false? (board-space board next))
+                     (jumpable-pos? board side
+                                    (pos-in-between pos next))))
+      next))
+  (append*
+   (for/list ([final (in-list nexts)])
+     (jump from (reverse (cons final acc))))
+   (for/list ([next (in-list nexts)])
+     (piece-valid-jumps board side from next piece (cons next acc)))))
 
 ;; board-space : Board Pos -> [Maybe Piece]
 (define (board-space board pos)

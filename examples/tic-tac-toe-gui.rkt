@@ -98,10 +98,6 @@
 ;; TIC-TAC-TOE : TBGGI
 (define TIC-TAC-TOE (tic-tac-toe/gui))
 
-;; main : -> ???
-(define (main)
-  (start TIC-TAC-TOE))
-
 ;; ------------------------------------------
 
 ;; display-turn : Side -> Image

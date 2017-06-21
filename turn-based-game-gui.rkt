@@ -2,10 +2,6 @@
 
 (provide gen:turn-based-game/gui
          turn-based-game/gui?
-         ;; main functions
-         start
-         turn-based-game-start
-         ;; other functions
          display-game-state
          display-end-state
          handle-mouse
@@ -78,92 +74,6 @@
 
   ;; ----------------------------------------
   )
-
-;; ------------------------------------------------------------------------
-
-;; Running a world program using a TBGG instance
-
-;; A TbggState is a TbgState that contains a TBGG instead of a TBG
-
-;; A TbggGuiState is one of:
-;;  - TbggInteractState
-;;  - TbggEndState
-
-;; A TbggInteractState is a (interact-state TbggState TurnState)
-;; A TbggEndState is a (end-state TbggState [Maybe Side])
-(struct interact-state [ts turn-state] #:transparent)
-(struct end-state [ts winner] #:transparent)
-
-;; start : TBGGI -> Void
-;; Starts the turn-based game with its standard initial state
-(define (start tbggi)
-  (turn-based-game-start tbggi
-                         (standard-initial-state tbggi)
-                         (standard-initial-side tbggi)))
-
-;; turn-based-game-start : TBGG GameState Side -> Void
-;; Starts the turn-based-game with the givin initial state
-(define (turn-based-game-start tbgg state side)
-  (void
-   (big-bang (tbgg-state-start-turn (tbg-state tbgg state side))
-     [to-draw tbgg-display]
-     [on-mouse tbgg-handle-mouse]
-     [on-key tbgg-handle-key])))
-
-;; ------------------------------------------------------------------------
-
-;; Private Implementation Details of the World Program
-
-;; tbgg-display : TbggGuiState -> Image
-(define (tbgg-display gs)
-  (match gs
-    [(interact-state (tbg-state tbgg state side) turn-state)
-     (display-game-state tbgg state side turn-state)]
-    [(end-state (tbg-state tbgg state side) winner)
-     (display-end-state tbgg state side winner)]))
-
-;; tbgg-handle-mouse : TbggGuiState Int Int MouseEvent -> TbggGuiState
-(define (tbgg-handle-mouse gs x y mouse)
-  (match gs
-    [(interact-state ts turn-state)
-     (match-define (tbg-state tbgg state side) ts)
-     (tbgg-handle-event-result
-      ts
-      (handle-mouse tbgg state side turn-state (make-posn x y) mouse))]
-    [(end-state _ _)
-     gs]))
-
-;; tbgg-handle-key : TbggGuiState KeyEvent -> TbggGuiState
-(define (tbgg-handle-key gs key)
-  (match gs
-    [(interact-state ts turn-state)
-     (match-define (tbg-state tbgg state side) ts)
-     (tbgg-handle-event-result
-      ts
-      (handle-key tbgg state side turn-state key))]
-    [(end-state _ _)
-     gs]))
-
-;; tbgg-handle-event-result : TbggState HandlerResult -> TbggGuiState
-(define (tbgg-handle-event-result ts hr)
-  (match hr
-    [(continue-turn turn-state)
-     (interact-state ts turn-state)]
-    [(finish-turn move)
-     (match-define (tbg-state _ _ side) ts)
-     (tbgg-state-check-winner
-      (tbg-state-handle-move-choice ts move)
-      side)]))
-
-;; tbgg-state-check-winner : TbggState Side -> TbggGuiState
-(define (tbgg-state-check-winner ts side)
-  (cond [(tbg-state-win? ts side) (end-state ts side)]
-        [else (tbgg-state-start-turn ts)]))
-
-;; tbgg-state-start-turn : TbggState -> TbggGuiState
-(define (tbgg-state-start-turn ts)
-  (match-define (tbg-state tbgg _ _) ts)
-  (interact-state ts (start-turn tbgg)))
 
 ;; ------------------------------------------------------------------------
 

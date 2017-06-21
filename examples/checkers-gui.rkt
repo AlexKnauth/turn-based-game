@@ -131,10 +131,6 @@
 ;; CHECKERS : TBGGI
 (define CHECKERS (checkers/gui))
 
-;; main : -> ???
-(define (main)
-  (start CHECKERS))
-
 ;; ------------------------------------------
 
 ;; handle-click-pos : Board Side TurnState Pos -> HandlerResult

@@ -104,10 +104,6 @@
 ;; CONNECT-FOUR : TBGGI
 (define CONNECT-FOUR (connect-four/gui))
 
-;; main : -> ???
-(define (main)
-  (start CONNECT-FOUR))
-
 ;; ------------------------------------------
 
 ;; display-turn : Side -> Image

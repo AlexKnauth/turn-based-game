@@ -1,6 +1,6 @@
 #lang agile
 
-(require "../computer-player-gui-controller.rkt"
+(require "../controller/computer-player-gui-controller.rkt"
          "../examples/connect-four-gui.rkt"
          "../computer-player/n-ahead.rkt")
 
