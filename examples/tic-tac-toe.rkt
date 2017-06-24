@@ -45,7 +45,12 @@
   ;; implement interfaces like gen:turn-based-game/gui.
 
   #:methods gen:turn-based-game
-  [;; next-side : TBG GameState Side -> Side
+  [;; sides : TBG GameState -> [Listof Sides]
+   ;; Order in the result does not matter
+   (define (sides self state)
+     (list X O))
+
+   ;; next-side : TBG GameState Side -> Side
    (define (next-side self state side)
      (cond [(X? side) O]
            [(O? side) X]))

@@ -2,6 +2,7 @@
 
 (provide gen:turn-based-game
          turn-based-game?
+         sides
          next-side
          (rename-out [play-at/check play-at])
          valid-move-choice?
@@ -58,6 +59,10 @@
   ;; ----------------------------------------
 
   ;; Each instance defines these methods:
+
+  ;; sides : TBG GameState -> [Listof Side]
+  ;; Order in the result does not matter
+  (sides turn-based-game state)
 
   ;; next-side : TBG GameState Side -> Side
   ;; Should not mutate the game state
