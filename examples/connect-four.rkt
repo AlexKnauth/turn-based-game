@@ -79,8 +79,8 @@
      (cond [(X? s) O]
            [(O? s) X]))
 
-   ;; play-at : TBG GameState Side MoveChoice -> GameState
-   (define (play-at self state side move)
+   ;; play-move-choice : TBG GameState Side MoveChoice -> GameState
+   (define (play-move-choice self state side move)
      (board-play-at state side move))
 
    ;; valid-move-choice? : TBG GameState Side MoveChoice -> Bool

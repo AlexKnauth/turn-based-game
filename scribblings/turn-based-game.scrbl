@@ -38,7 +38,7 @@
     @item{@defid[next-side]}
     @item{@defid[valid-move-choice?]}
     @item{@defid[valid-move-choices]}
-    @item{@defid[play-at]}
+    @item{@defid[play-move-choice]}
     @item{@defid[winning-state?]}
   ]
 }

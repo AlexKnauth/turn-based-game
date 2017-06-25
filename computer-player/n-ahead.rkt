@@ -99,7 +99,7 @@
        (choice-result
         move
         (next-state/depth tbg (choice-result-state c)
-                          (play-at tbg game side move)
+                          (play-move-choice tbg game side move)
                           (next-side tbg game side)
                           (sub1 d))))
      (define old-next-states
@@ -463,7 +463,7 @@
     [else
      ;; next-outcome : MoveChoice -> ChoiceResult
      (define (next-outcome c)
-       (define game* (play-at tbg game side c))
+       (define game* (play-move-choice tbg game side c))
        (choice-result
         c
         (best-outcomes tbg game* side* (sub1 n)

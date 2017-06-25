@@ -55,9 +55,9 @@
      (cond [(X? side) O]
            [(O? side) X]))
 
-   ;; play-at : TBG GameState Side MoveChoice -> GameState
+   ;; play-move-choice : TBG GameState Side MoveChoice -> GameState
    ;; ASSUME no one has won yet
-   (define (play-at self state side move)
+   (define (play-move-choice self state side move)
      (board-play-at state side move))
    
    ;; valid-move-choice? : TBG GameState Side MoveChoice -> Boolean

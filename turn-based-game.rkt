@@ -4,7 +4,7 @@
          turn-based-game?
          sides
          next-side
-         (rename-out [play-at/check play-at])
+         (rename-out [play-move-choice/check play-move-choice])
          valid-move-choice?
          winning-state?
          valid-move-choices
@@ -74,10 +74,10 @@
   ;; valid-move-choices : TBG GameState Side -> [Sequenceof MoveChoice]
   (valid-move-choices turn-based-game state side)
 
-  ;; play-at : TBG GameState Side MoveChoice -> GameState
+  ;; play-move-choice : TBG GameState Side MoveChoice -> GameState
   ;; Should not mutate the original game state, should return a new one
   ;; ASSUME that the given move is valid
-  (play-at turn-based-game state side move)
+  (play-move-choice turn-based-game state side move)
 
   ;; winning-state? : TBG GameState Side -> Boolean
   ;; Should not mutate the game state
@@ -86,8 +86,8 @@
   ;; ----------------------------------------
   )
 
-;; play-at/check : TBG GameState Side MoveChoice -> GameState
-(define (play-at/check tbg state side move)
+;; play-move-choice/check : TBG GameState Side MoveChoice -> GameState
+(define (play-move-choice/check tbg state side move)
   (unless (valid-move-choice? tbg state side move)
     (error 'plat-at
            (string-append "invalid move choice:\n"
@@ -96,7 +96,7 @@
                           "  side:  ~v\n"
                           "  move:  ~v")
            tbg state side move))
-  (play-at tbg state side move))
+  (play-move-choice tbg state side move))
 
 ;; ------------------------------------------------------------------------
 
@@ -148,9 +148,9 @@
     [(valid-move-choice? tbg state side move)
      (tbg-state
       tbg
-      ;; don't need play-at/check because valid-move-choice? already
+      ;; don't need play-move-choice/check because valid-move-choice? already
       ;; returned true
-      (play-at tbg state side move)
+      (play-move-choice tbg state side move)
       (next-side tbg state side))]
     [else ts]))
 

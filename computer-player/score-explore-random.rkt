@@ -108,7 +108,7 @@
        (choice-result
         move
         (next-state/depth tbg (choice-result-state c)
-                          (play-at tbg game side move)
+                          (play-move-choice tbg game side move)
                           (next-side tbg game side)
                           (sub1 dn)
                           p
@@ -147,7 +147,7 @@
     [else
      ;; next-outcome : MoveChoice -> ChoiceResult
      (define (next-outcome c)
-       (define game* (play-at tbg game side c))
+       (define game* (play-move-choice tbg game side c))
        (choice-result
         c
         (best-outcomes tbg game* side* (sub1 dn) p dk
@@ -176,7 +176,7 @@
                             (reverse acc))]
                      [else
                       (define mv (random-element mvs))
-                      (define game* (play-at tbg game side mv))
+                      (define game* (play-move-choice tbg game side mv))
                       (define side* (next-side tbg game side))
                       (loop game*
                             side*
