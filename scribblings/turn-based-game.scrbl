@@ -57,6 +57,8 @@
 
 @section{User interfaces for playing turn-based games}
 
+@subsection[#:style 'hidden]{}
+
 @defmodule[turn-based-game/turn-based-game-gui]{
 
 @defidform[#:kind "generic interface"
@@ -86,7 +88,9 @@
   ]
 }}
 
-@defmodule[turn-based-game/controller/human-player-controller]{
+@subsection[#:style 'hidden]{}
+
+@defmodule[turn-based-game/controller/human-player-gui-controller]{
 
 @defproc[(start [game-desc @#,tech{TBGGI}]) void?]{
   Starts the turn-based game with its standard initial state.
@@ -99,12 +103,16 @@ computer will use to play a game. Some will be specific to a particular
 game, but some can be generic across all @tech{TBG} instances, although
 for some they might be increbibly slow.
 
+@subsection[#:style 'hidden]{}
+
 @defmodule[turn-based-game/computer-player/n-ahead]{
 
 @defproc[(computer/n-ahead [n natural?]) @#,tech{ComputerPlayer}]{
   An automated turn-based-game player that only looks @racket[n] moves
   ahead.
 }}
+
+@subsection[#:style 'hidden]{}
 
 @defmodule[turn-based-game/computer-player/score-explore-random]{
 
@@ -116,7 +124,9 @@ for some they might be increbibly slow.
   according to the percentage of those paths that produce winning results.
 }}
 
-@defmodule[turn-based-game/controller/computer-player-controller]{
+@subsection[#:style 'hidden]{}
+
+@defmodule[turn-based-game/controller/computer-player-gui-controller]{
 
 @defproc[(start/computer [game-desc @#,tech{TBGGI}]
                          [computer-players
