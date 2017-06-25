@@ -61,6 +61,9 @@
   ;; display-end-state : TBGG GameState Side [Maybe Side] -> Image
   (display-end-state turn-based-game/gui state side winner)
 
+  ;; start-turn : TBGG -> TurnState
+  (start-turn turn-based-game/gui)
+
   ;; handle-mouse :
   ;; TBGG GameState Side TurnState Posn MouseEvent -> HandlerResult
   (handle-mouse turn-based-game/gui state side turn-state posn mouse)
@@ -68,9 +71,6 @@
   ;; handle-key :
   ;; TBGG GameState Side TurnState KeyEvent -> HandlerResult
   (handle-key turn-based-game/gui state side turn-state key)
-
-  ;; start-turn : TBGG -> TurnState
-  (start-turn turn-based-game/gui)
 
   ;; ----------------------------------------
   )
