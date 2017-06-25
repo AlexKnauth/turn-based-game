@@ -4,5 +4,9 @@
          "../examples/checkers-gui.rkt"
          "../computer-player/score-explore-random.rkt")
 
-(start/computer CHECKERS (hash O (computer/score-explore-random 2 3 40)))
+(module+ main
+
+  (start/computer CHECKERS (hash O (computer/score-explore-random 2 3 40)))
+
+  )
 
