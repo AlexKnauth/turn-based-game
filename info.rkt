@@ -17,6 +17,8 @@
   '("rackunit-lib"
     "scribble-lib"
     "racket-doc"
+    "htdp-doc"
+    "collections-doc"
     ))
 
 ;; ------------------------------------------------------------------------
