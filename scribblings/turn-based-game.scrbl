@@ -10,7 +10,7 @@
                      turn-based-game/computer-player/score-explore-random
                      turn-based-game/controller/human-player-gui-controller
                      turn-based-game/controller/computer-player-gui-controller
-                     (only-in data/collection sequenceof)
+                     (only-in data/collection sequenceof known-finite?)
                      (only-in 2htdp/image image? real-valued-posn?)
                      (only-in 2htdp/universe mouse-event? key-event?)
                      ))
@@ -19,6 +19,7 @@
    (defidentifier #'id))
 
 @(define Boolean @racketlink[boolean?]{Boolean})
+@(define Natural @racketlink[natural?]{Natural})
 @(define Image @racketlink[image?]{Image})
 @(define Posn @racketlink[real-valued-posn?]{Posn})
 @(define MouseEvent @racketlink[mouse-event?]{MouseEvent})
@@ -50,20 +51,72 @@
 
   Each instance needs to define the methods:
   @itemlist[
-    @item{@defid[sides] :
+    @item{@racket[sides] :
           @racket[@#,TBG @#,GameState -> (listof @#,Side)]}
-    @item{@defid[next-side] :
+    @item{@racket[next-side] :
           @racket[@#,TBG @#,GameState @#,Side -> @#,Side]}
-    @item{@defid[valid-move-choice?] :
+    @item{@racket[valid-move-choice?] :
           @racket[@#,TBG @#,GameState @#,Side @#,MoveChoice -> @#,Boolean]}
-    @item{@defid[valid-move-choices] :
+    @item{@racket[valid-move-choices] :
           @racket[@#,TBG @#,GameState @#,Side -> (sequenceof @#,MoveChoice)]}
-    @item{@defid[play-move-choice] :
+    @item{@racket[play-move-choice] :
           @racket[@#,TBG @#,GameState @#,Side @#,MoveChoice -> @#,GameState]}
-    @item{@defid[winning-state?] :
+    @item{@racket[winning-state?] :
           @racket[@#,TBG @#,GameState @#,Side -> @#,Boolean]}
   ]
-}
+
+@nested[#:style 'inset]{
+    
+  @defproc[(sides [tbg @#,TBG] [game-state @#,GameState]) (listof @#,Side)]{
+    Returns the set of sides that are currently in the game. Order in the
+    result list does not matter.
+  }
+
+  @defproc[(next-side [tbg @#,TBG] [game-state @#,GameState] [side @#,Side])
+           @#,Side]{
+    Returns the side to play once @racket[side]'s turn is over.
+  }
+
+  @defproc[(valid-move-choice? [tbg @#,TBG]
+                               [game-state @#,GameState]
+                               [side @#,Side]
+                               [move-choice @#,MoveChoice])
+           @#,Boolean]{
+    Determines whether the given @racket[move-choice] is a valid legal move
+    according to the rules of the game. If it is legal,
+    @racket[valid-move-choice?] returns true, otherwise it returns false.
+  }
+
+  @defproc[(valid-move-choices [tbg @#,TBG]
+                               [game-state @#,GameState]
+                               [side @#,Side])
+           (sequenceof @#,MoveChoice)]{
+    Returns a sequence which will enumerate all possible legal moves within
+    the rules of the game.
+
+    NOTE: This sequence may or may not be finite, so if you're relying on
+    using it to iterate through all the elements, check with
+    @racket[known-finite?] first.
+  }
+
+  @defproc[(play-move-choice [tbg @#,TBG]
+                             [game-state @#,GameState]
+                             [side @#,Side]
+                             [move-choice @#,MoveChoice])
+           @#,GameState]{
+    Returns the game state after @racket[side] plays the given
+    @racket[move-choice] for their turn. This should not mutate the
+    original game state, but return a new one.
+  }
+
+  @defproc[(winning-state? [tbg @#,TBG]
+                           [game-state @#,GameState]
+                           [side @#,Side])
+           @#,Boolean]{
+    Determines whether the given @racket[side] has won in the given
+    @racket[game-state] according to the rules of the game.
+  }
+}}
 
 @defidform[#:kind "generic interface"
            gen:turn-based-game/standard-initial-state]{
@@ -72,12 +125,23 @@
 
   This interface includes two more methods:
   @itemlist[
-    @item{@defid[standard-initial-state] :
+    @item{@racket[standard-initial-state] :
           @racket[@#,TBGI -> @#,GameState]}
-    @item{@defid[standard-initial-side] :
+    @item{@racket[standard-initial-side] :
           @racket[@#,TBGI -> @#,Side]}
   ]
-}}
+
+@nested[#:style 'inset]{
+    
+  @defproc[(standard-initial-state [tbg @#,TBGI]) @#,GameState]{
+    Produces the standard initial game state for the given turn-based game.
+  }
+
+  @defproc[(standard-initial-side [tbg @#,TBGI]) @#,Side]{
+    Produces the standard starting side for the given turn-based game, that
+    is, the side that starts the game with their turn.
+  }
+}}}
 
 @section{User interfaces for playing turn-based games}
 
@@ -123,12 +187,14 @@
                   -> @#,HandlerResult]}
   ]
 
-  The key and mouse handlers should return @|HandlerResult|s. A
-  @deftech[HandlerResult] is one of:
-  @itemlist[
-    @item{@racket[(@#,defid[continue-turn] @#,TurnState)]}
-    @item{@racket[(@#,defid[finish-turn] @#,MoveChoice)]}
-  ]
+  The key and mouse handlers should return @|HandlerResult|s according to
+  the data definition below.
+
+  @nested[#:style 'code-inset]{
+    A @deftech[HandlerResult] is one of: @linebreak[]
+    @hspace[1] -- @racket[(@#,defid[continue-turn] @#,TurnState)] @linebreak[]
+    @hspace[1] -- @racket[(@#,defid[finish-turn] @#,MoveChoice)]
+  }
 }}
 
 @subsection[#:style 'hidden]{}
@@ -152,7 +218,7 @@ for some they might be increbibly slow.
 
 @defmodule[turn-based-game/computer-player/n-ahead]{
 
-@defproc[(computer/n-ahead [n natural?]) @#,ComputerPlayer]{
+@defproc[(computer/n-ahead [n @#,Natural]) @#,ComputerPlayer]{
   An automated turn-based-game player that only looks @racket[n] moves
   ahead.
 }}
@@ -161,7 +227,9 @@ for some they might be increbibly slow.
 
 @defmodule[turn-based-game/computer-player/score-explore-random]{
 
-@defproc[(computer/score-explore-random [n natural?] [p natural?] [k natural?])
+@defproc[(computer/score-explore-random [n @#,Natural]
+                                        [p @#,Natural]
+                                        [k @#,Natural])
          @#,ComputerPlayer]{
   An automated turn-based-game player that looks @racket[n] moves ahead,
   and for each game state after that it randomly explores @racket[p]
