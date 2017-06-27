@@ -2,7 +2,9 @@
 
 @(require (for-label racket/base
                      racket/contract/base
+                     racket/bool
                      racket/math
+                     racket/list
                      turn-based-game/turn-based-game
                      turn-based-game/turn-based-game-gui
                      turn-based-game/computer-player
@@ -12,7 +14,9 @@
                      turn-based-game/controller/computer-player-gui-controller
                      (only-in data/collection sequenceof known-finite?)
                      (only-in 2htdp/image image? real-valued-posn?)
-                     (only-in 2htdp/universe mouse-event? key-event?)
+                     (only-in 2htdp/universe
+                              mouse-event? mouse=?
+                              key-event?  key=?)
                      ))
 
 @(define-syntax-rule (defid id)
@@ -20,6 +24,8 @@
 
 @(define Boolean @racketlink[boolean?]{Boolean})
 @(define Natural @racketlink[natural?]{Natural})
+@(define Void @racketlink[void?]{Void})
+
 @(define Image @racketlink[image?]{Image})
 @(define Posn @racketlink[real-valued-posn?]{Posn})
 @(define MouseEvent @racketlink[mouse-event?]{MouseEvent})
@@ -165,24 +171,23 @@
   Again, instances of these are meant to be dictionaries
   of game-related methods, not the state of the game.
 
-  In addition to the types @Side, @GameState, and
-  @MoveChoice, each instance should define its own type for
-  @deftech[TurnState]. The @TurnState type keeps track of any state
-  that a user could build up before making a final @MoveChoice for
-  their turn.
+  Each instance should define its own type for @deftech[TurnState], in
+  addition to the types @Side, @GameState, and @|MoveChoice|. The
+  @TurnState type keeps track of any state that a player could build up
+  before making a final @MoveChoice for their turn.
 
   Each instance needs to define the methods:
   @itemlist[
-    @item{@defid[display-game-state] :
+    @item{@racket[display-game-state] :
           @racket[@#,TBGG @#,GameState @#,Side @#,TurnState -> @#,Image]}
-    @item{@defid[display-end-state] :
+    @item{@racket[display-end-state] :
           @racket[@#,TBGG @#,GameState @#,Side (or/c #f @#,Side) -> @#,Image]}
-    @item{@defid[start-turn] :
+    @item{@racket[start-turn] :
           @racket[@#,TBGG -> @#,TurnState]}
-    @item{@defid[handle-mouse] :
+    @item{@racket[handle-mouse] :
       @racket[@#,TBGG @#,GameState @#,Side @#,TurnState @#,Posn @#,MouseEvent
               -> @#,HandlerResult]}
-    @item{@defid[handle-key] :
+    @item{@racket[handle-key] :
           @racket[@#,TBGG @#,GameState @#,Side @#,TurnState @#,KeyEvent
                   -> @#,HandlerResult]}
   ]
@@ -195,13 +200,132 @@
     @hspace[1] -- @racket[(@#,defid[continue-turn] @#,TurnState)] @linebreak[]
     @hspace[1] -- @racket[(@#,defid[finish-turn] @#,MoveChoice)]
   }
-}}
+
+@nested[#:style 'inset]{
+    
+  @defproc[(display-game-state [tbg @#,TBGG]
+                               [game-state @#,GameState]
+                               [side @#,Side]
+                               [turn-state @#,TurnState])
+           @#,Image]
+
+  @defproc[(display-end-state [tbg @#,TBGG]
+                              [game-state @#,GameState]
+                              [side @#,Side]
+                              [winner (or/c #f @#,Side)])
+          @#,Image]
+
+  @defproc[(start-turn [tbg @#,TBGG]) @#,TurnState]{
+    Determines the initial state that every player starts their turn with.
+    The first mouse event or key event of a turn will use the result of
+    this method as the starting turn-state.
+  }
+
+  @defproc[(handle-mouse [tbg @#,TBGG]
+                         [game-state @#,GameState]
+                         [side @#,Side]
+                         [turn-state @#,TurnState]
+                         [mouse-posn @#,Posn]
+                         [mouse-event @#,MouseEvent])
+           @#,HandlerResult]{
+    This method handles mouse events, including @racket["move"] for mouse
+    movements, @racket["button-down"] and @racket["button-up"] for mouse
+    clicks, @racket["drag"] for dragging movements, and @racket["enter"]
+    and @racket["leave"] for when the mouse enters and leaves the game
+    canvas.
+
+    @margin-note{
+      Mouse scrolling motions are actually not handled as mouse events;
+      they are handled as key events using @racket[handle-key].
+    }
+
+    When a mouse event happens, this method can either continue the turn
+    with an updated turn-state using @racket[continue-turn], or finish the
+    turn with a final @racket[@#,MoveChoice], using @racket[finish-turn].
+    If the mouse event is not relevant, it should continue the turn with
+    the same @racket[turn-state] as before.
+
+    For example, some games might require moving a piece by clicking on it
+    and then clicking on the space to move it to. On the first click, the
+    @racket[handle-mouse] method should return
+    @racket[(continue-turn _piece-selection)] where
+    @racket[_piece-selection] is a @TurnState representing which piece was
+    clicked on to be moved. Then on the second click, the
+    @racket[handle-mouse] method should return
+    @racket[(finish-turn _move-choice)] where @racket[_move-choice] is a
+    @MoveChoice representing which piece should be moved and where it
+    should go. A rough sketch of the definition would look like this:
+
+    @codeblock[#:keep-lang-line? #false]|{
+    #lang racket
+    ;; A Space represents the position of a space on the board.
+
+    ;; A MoveChoice is a (move Space Space)
+    (struct move [from to])
+    ;; representing moving a piece from the `from` space to the `to` space.
+
+    ;; A TurnState is one of:
+    ;;  - #false  ; beginning of turn
+    ;;  - Space   ; the piece on this space has been selected to be moved
+
+    ;; handle-mouse :
+    ;; TBGG GameState Side TurnState Posn MouseEvent -> HandlerResult
+    (define (handle-mouse self game side turn-state posn mouse)
+      (cond
+        [(mouse=? "button-down" mouse)
+         (cond [(false? turn-state)
+                ;; this is the first click
+                (if (piece-exists-at-space? game side (posn->space posn))
+                    ;; select the piece at this space to be moved
+                    (continue-turn (posn->space posn))
+                    ;; otherwise just a stray click on an empty space
+                    (continue-turn turn-state))]
+               [else
+                ;; there is already a piece selected; this is the second click
+                (if (piece-can-move-here? game turn-state (posn->space posn))
+                    ;; this is a finished move choice
+                    (finish-turn (move turn-state (posn->space posn)))
+                    ;; otherwise this would be an invalid move
+                    ....)])]
+        [else
+         ;; the mouse event is not relevant
+         (continue-turn turn-state)]))
+    }|
+  }
+
+  @defproc[(handle-key [tbg @#,TBGG]
+                       [game-state @#,GameState]
+                       [side @#,Side]
+                       [turn-state @#,TurnState]
+                       [key-event @#,KeyEvent])
+           @#,HandlerResult]{
+    This method handles key events. One-character strings like @racket["a"],
+    @racket["b"],  and @racket["c"] represent the "regular" keys like A, B,
+    and C. This includes strings like @racket[" "] for the Spacebar,
+    @racket["\r"] for the Enter key, and @racket["\t"] for the Tab key.
+
+    Other keys are represented with multi-character strings, such as
+    @racket["left"], @racket["right"], @racket["up"], and @racket["down"]
+    for the arrow keys, and @racket["shift"] and @racket["rshift"] for the two
+    shift keys.
+
+    Mouse scrolling motions are also handled as key events, with
+    @racket["wheel-up"] representing scrolling up, @racket["wheel-down"]
+    representing scrolling down, and @racket["wheel-left"] and
+    @racket["wheel-right"] representing scrolling left and right.
+
+    Just like with @racket[handle-mouse], when a key event happens, this
+    method can either continue the turn with an updated turn-state using
+    @racket[continue-turn], or finish the turn with a final
+    @racket[@#,MoveChoice] using @racket[finish-turn].
+  }
+}}}
 
 @subsection[#:style 'hidden]{}
 
 @defmodule[turn-based-game/controller/human-player-gui-controller]{
 
-@defproc[(start [game-desc @#,TBGGI]) void?]{
+@defproc[(start [game-desc @#,TBGGI]) @#,Void]{
   Starts the turn-based game with its standard initial state.
 }}
 
@@ -244,7 +368,7 @@ for some they might be increbibly slow.
 @defproc[(start/computer [game-desc @#,tech{TBGGI}]
                          [computer-players
                           (hash/c @#,tech{Side} @#,tech{ComputerPlayer})])
-         void?]{
+         @#,Void]{
   Starts the turn-based game with its standard initial state, with some of
   the sides played by the computer.
 }}
