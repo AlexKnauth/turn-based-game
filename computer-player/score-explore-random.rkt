@@ -4,6 +4,7 @@
 
 (require racket/bool
          racket/hash
+         (only-in racket/set set-intersect)
          "../turn-based-game.rkt"
          "../computer-player.rkt")
 
@@ -24,17 +25,36 @@
 ;;  - #false
 ;;  - Result
 
-;; A Result is a (result [Maybe Side] Score [List-of ChoiceResult])
-(struct result [winner score nexts] #:transparent)
+;; A Result is a (result WinInfo Score [List-of ChoiceResult])
+(struct result [win-info score nexts] #:transparent)
+
+;; A WinInfo is one of:
+;;  - #false        ; represents unknown
+;;  - [Listof Side] ; represents a forcable end with these winners
+;; An empty list represents a forcable tie.
+
+;; win-info : TBG GameState -> WinInfo
+(define (win-info tbg game)
+  (define wins?
+    (for/list ([s (in-list (sides tbg game))]
+               #:when (winning-state? tbg game s))
+      s))
+  (cond [(not (empty? wins?)) wins?]
+        [else #false]))
 
 ;; A ChoiceResult is a (choice-result MoveChoice State)
 (struct choice-result [move state] #:transparent)
 
-;; choice-result-winner=? : ChoiceResult Side -> Bool
-(define (choice-result-winner=? c side)
+;; choice-result-win-info : ChoiceResult -> WinInfo
+(define (choice-result-win-info c)
   (match (choice-result-state c)
     [#false #false]
-    [(result winner _ _) (equal? winner side)]))
+    [(result wininfo _ _) wininfo]))
+
+;; choice-result-winner? : ChoiceResult Side -> Boolean
+(define (choice-result-winner? c side)
+  (define wininfo (choice-result-win-info c))
+  (and wininfo (member side wininfo) #t))
 
 ;; choice-result-score : ChoiceResult -> Score
 (define (choice-result-score c)
@@ -121,9 +141,9 @@
      ;;               possibilities, just use them all without filtering
      (cond
        [(and (andmap result? old-next-states)
-             (equal? (map result-winner old-next-states)
-                     (map result-winner (map choice-result-state choices))))
-        (result (result-winner state)
+             (equal? (map result-win-info old-next-states)
+                     (map result-win-info (map choice-result-state choices))))
+        (result (result-win-info state)
                 (score-sum (map choice-result-score choices))
                 choices)]
        [else
@@ -137,10 +157,9 @@
 
 ;; best-outcomes : TBG GameState Side Nat Nat Nat [List-of MoveChoice] -> State
 (define (best-outcomes tbg game side dn p dk mvs)
-  (define side* (next-side tbg game side))
+  (define wininfo (win-info tbg game))
   (cond
-    [(winning-state? tbg game side) (imm-win side)]
-    [(winning-state? tbg game side*) (imm-win side*)]
+    [wininfo (imm-win wininfo)]
     [(zero? dn)
      (score-explore-random tbg game side p dk mvs)]
     [(empty? mvs) IMM-TIE]
@@ -148,6 +167,7 @@
      ;; next-outcome : MoveChoice -> ChoiceResult
      (define (next-outcome c)
        (define game* (play-move-choice tbg game side c))
+       (define side* (next-side tbg game* side))
        (choice-result
         c
         (best-outcomes tbg game* side* (sub1 dn) p dk
@@ -177,7 +197,7 @@
                      [else
                       (define mv (random-element mvs))
                       (define game* (play-move-choice tbg game side mv))
-                      (define side* (next-side tbg game side))
+                      (define side* (next-side tbg game* side))
                       (loop game*
                             side*
                             (valid-move-choices tbg game* side*)
@@ -209,9 +229,9 @@
                                 (choice-result
                                  mv
                                  #false))))]
-                        [(result winner existing-score cs)
+                        [(result wininfo existing-score cs)
                          (result
-                          winner
+                          wininfo
                           (score-sum (list existing-score score))
                           (for/list ([c (in-list cs)])
                             (match c
@@ -224,11 +244,13 @@
 
 ;; best-choices : TBG GameState Side [List-of ChoiceResult] -> Result
 (define (best-choices tbg game side choices)
-  (define side* (next-side tbg game side))
   ;; winning-choice? : ChoiceResult -> Boolean
-  (define (winning-choice? entry) (choice-result-winner=? entry side))
-  ;; losing-choice? : ChoiceResult -> Boolean
-  (define (losing-choice? entry) (choice-result-winner=? entry side*))
+  (define (winning-choice? entry) (choice-result-winner? entry side))
+  ;; non-losing-choice? : ChoiceResult -> Boolean
+  ;; ASSUME not a winning choice
+  (define (non-losing-choice? entry)
+    (or (empty? (choice-result-win-info entry))
+        (false? (choice-result-win-info entry))))
   ;; choice-result-score/side : ChoiceResult -> Real[0,1]
   (define choice-result-score/side (choice-result-score/percentage side))
 
@@ -236,12 +258,14 @@
     (filter winning-choice? choices))
   (cond
     [(not (empty? winning-choices))
-     (result side
+     ;; TODO: What to do if there are multiple winning choices
+     ;; but they have different winner groups? (All including me)
+     (result (list side)
              (score-sum (map choice-result-score choices))
              winning-choices)]
     [else
      (define non-losing-choices
-       (filter (compose not losing-choice?) choices))
+       (filter non-losing-choice? choices))
      (cond
        [(not (empty? non-losing-choices))
         (define best
@@ -253,7 +277,14 @@
        [else
         (define best
           (apply max (map choice-result-score/side choices)))
-        (result side*
+        ;; TODO: What to do if there are multiple losing choices
+        ;; but they have different winner groups? (None including me)
+        ;; If there is a set of sides that is included in all winner groups
+        ;; (which feels like it should be true but I'm not sure)
+        ;; then put that set in the win-info
+        (define winners
+          (apply set-intersect (map choice-result-win-info choices)))
+        (result winners
                 (score-sum (map choice-result-score choices))
                 (filter (λ (c) (= best (choice-result-score/side c)))
                         choices))])]))
@@ -273,13 +304,15 @@
 
 ;; States for immediate wins or ties
 
-;; imm-win : [Maybe Side] -> Result
-(define (imm-win winner)
-  (cond [winner (result winner (hash winner 1) '())]
-        [else (result #false (hash) '())]))
+;; imm-win : WinInfo -> Result
+(define (imm-win wininfo)
+  (cond [wininfo
+         (result wininfo (for/hash ([w (in-list wininfo)]) (values w 1)) '())]
+        [else
+         (result #false (hash) '())]))
 
 ;; IMM-TIE : Result
-(define IMM-TIE (imm-win #false))
+(define IMM-TIE (imm-win '()))
 
 ;; ------------------------------------------------------------------------
 

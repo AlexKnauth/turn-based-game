@@ -65,7 +65,9 @@
   (sides turn-based-game state)
 
   ;; next-side : TBG GameState Side -> Side
-  ;; Should not mutate the game state
+  ;; Returns the side to play once `side`'s turn is over. This should be
+  ;; called *after* `side`'s turn is over and `game-state` has been updated
+  ;; with `side`'s move choice. Should not mutate the game state.
   (next-side turn-based-game state side)
 
   ;; valid-move-choice? : TBG GameState Side MoveChoice -> Boolean
@@ -146,12 +148,15 @@
   (match-define (tbg-state tbg state side) ts)
   (cond
     [(valid-move-choice? tbg state side move)
+     ;; don't need play-move-choice/check because valid-move-choice?
+     ;; already returned true
+     (define state* (play-move-choice tbg state side move))
      (tbg-state
       tbg
-      ;; don't need play-move-choice/check because valid-move-choice? already
-      ;; returned true
-      (play-move-choice tbg state side move)
-      (next-side tbg state side))]
+      state*
+      ;; use `state*` here because next-side should be called after
+      ;; `side`'s turn is over
+      (next-side tbg state* side))]
     [else ts]))
 
 ;; ------------------------------------------------------------------------

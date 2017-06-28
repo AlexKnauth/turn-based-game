@@ -80,7 +80,9 @@
 
   @defproc[(next-side [tbg @#,TBG] [game-state @#,GameState] [side @#,Side])
            @#,Side]{
-    Returns the side to play once @racket[side]'s turn is over.
+    Returns the side to play once @racket[side]'s turn is over. This should
+    be called @emph{after} @racket[side]'s turn is over and
+    @racket[game-state] has been updated with @racket[side]'s move choice.
   }
 
   @defproc[(valid-move-choice? [tbg @#,TBG]
