@@ -10,7 +10,8 @@
          valid-move-choices
          ;; Standard initial states
          gen:turn-based-game/standard-initial-state
-         turn-based-game/standard-initial-state?
+         (rename-out [turn-based-game/standard-initial-state?*
+                      turn-based-game/standard-initial-state?])
          standard-initial-state
          standard-initial-side
          ;; Bundling the TBG with the game state
@@ -107,6 +108,10 @@
 
 ;; Again, this is meant to be a dictionary of game-related methods,
 ;; and *NOT* the state of the game.
+
+(define (turn-based-game/standard-initial-state?* v)
+  (and (turn-based-game? v)
+       (turn-based-game/standard-initial-state? v)))
 
 (define-generics turn-based-game/standard-initial-state
 
