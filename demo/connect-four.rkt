@@ -7,9 +7,12 @@
 
 (module+ main
 
+  ;Human vs. Human
+  (start/computer CONNECT-FOUR (hash))
+
   ;(start/computer CONNECT-FOUR (hash O (computer/n-ahead 3)))
 
-  (start/computer CONNECT-FOUR (hash O (computer/score-explore-random 2 20 20)))
+  ;(start/computer CONNECT-FOUR (hash O (computer/score-explore-random 2 20 20)))
 
   ;; So far Black is winning a lot
   ;; Red won once so far.

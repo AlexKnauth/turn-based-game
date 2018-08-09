@@ -31,8 +31,8 @@
                         (square SQUARE-SIZE "solid" FRAME-COLOR)))
 (define X-SQUARE (overlay (circle CIRCLE-RADIUS "solid" RED) SQUARE))
 (define O-SQUARE (overlay (circle CIRCLE-RADIUS "solid" BLACK) SQUARE))
-(define X-GHOST-SQUARE (overlay (circle CIRCLE-RADIUS 100 RED) SQUARE))
-(define O-GHOST-SQUARE (overlay (circle CIRCLE-RADIUS 100 BLACK) SQUARE))
+(define X-GHOST-SQUARE (overlay (circle CIRCLE-RADIUS 50 RED) SQUARE))
+(define O-GHOST-SQUARE (overlay (circle CIRCLE-RADIUS 50 BLACK) SQUARE))
 
 (define BOARD-WIDTH (* W SQUARE-SIZE))
 (define BOARD-HEIGHT (* H SQUARE-SIZE))
