@@ -21,7 +21,7 @@
 (define BROWN "brown")
 (define DARK-BROWN "dark brown")
 (define DARK-RED "dark red")
-(define GREY "grey")
+(define GRAY "gray")
 (define TRANSPARENT "transparent")
 
 (define SQUARE-SIZE 90)
@@ -47,7 +47,7 @@
            DARK-SQUARE))
 (define O-KING-SQUARE
   (overlay (circle CIRCLE-RADIUS "solid" BLACK)
-           (star-polygon CIRCLE-RADIUS 7 3 "solid" GREY)
+           (star-polygon CIRCLE-RADIUS 7 3 "solid" GRAY)
            DARK-SQUARE))
 
 (define BOARD-WIDTH (* W SQUARE-SIZE))
