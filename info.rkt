@@ -26,7 +26,7 @@
 ;; For the Collection
 
 (define scribblings
-  '(["scribblings/turn-based-game.scrbl" ()]))
+  '(["scribblings/turn-based-game.scrbl" () ("Game development")]))
 
 ;; ------------------------------------------------------------------------
 
